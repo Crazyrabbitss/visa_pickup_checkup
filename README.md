@@ -34,12 +34,17 @@ This repo can run from a private GitHub repository with GitHub Actions. Keep the
 Create these repository secrets:
 
 - `PASSPORT_PICKUP_UID` - your 8 or 9 digit UID/HAL.
-- `SMTP_SERVER` - SMTP host, for example `smtp.qq.com`.
-- `SMTP_PORT` - SMTP port, for example `465`.
-- `SMTP_USERNAME` - SMTP login email address.
-- `SMTP_PASSWORD` - SMTP app password or authorization code.
-- `EMAIL_FROM` - sender email address.
+- `GMAIL_USERNAME` - the Gmail address used to send notifications.
+- `GMAIL_APP_PASSWORD` - a Gmail App Password, not your normal Google password.
 - `EMAIL_TO` - recipient email address.
+
+The workflow uses Gmail SMTP directly:
+
+- SMTP server: `smtp.gmail.com`
+- SMTP port: `465`
+- SSL/TLS: enabled
+
+To create `GMAIL_APP_PASSWORD`, enable 2-Step Verification on the Google account, then create an App Password in Google Account security settings. Use the 16-character app password as the secret value.
 
 The workflow is stored at `.github/workflows/passport-pickup-check.yml`.
 
