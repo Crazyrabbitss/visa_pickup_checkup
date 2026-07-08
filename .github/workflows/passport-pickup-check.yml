@@ -64,14 +64,14 @@ jobs:
             availableMatches: value?.availableMatches ?? [],
             error: value?.error ?? null
           });
-          const laHour = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'America/Los_Angeles',
+          const beijingHour = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Shanghai',
             hour: '2-digit',
             hour12: false
           }).formatToParts(new Date()).find((part) => part.type === 'hour')?.value;
           const isFirstSuccessfulRun = (!previous || previous.status === 'error') && state.status !== 'error';
           const changed = previous && fingerprint(previous) !== fingerprint(state);
-          const dailyStatus = laHour === '23';
+          const dailyStatus = beijingHour === '23';
           const error = state.status === 'error';
           const available = state.status === 'appointment-available';
           const manualRun = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
@@ -107,8 +107,8 @@ jobs:
             'manual-run': '手动运行测试',
             'no-notification': '无需通知'
           };
-          const checkedAtLa = new Intl.DateTimeFormat('zh-CN', {
-            timeZone: 'America/Los_Angeles',
+          const checkedAtBeijing = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai',
             dateStyle: 'medium',
             timeStyle: 'short'
           }).format(new Date(state.checkedAt));
@@ -137,7 +137,7 @@ jobs:
             `当前结论：${currentLabel}`,
             `通知原因：${reasonLabel[reason] ?? reason}`,
             `上次状态：${previousLabel}`,
-            `检查时间：${checkedAtLa} America/Los_Angeles`,
+            `检查时间：${checkedAtBeijing} 北京时间`,
             `不可预约匹配：${(state.unavailableMatches ?? []).join(', ') || '无'}`,
             `可预约匹配：${(state.availableMatches ?? []).join(', ') || '无'}`,
             `错误：${state.error ?? '无'}`,
@@ -159,7 +159,7 @@ jobs:
                     <table style="width:100%;border-collapse:collapse;font-size:14px;">
                       <tr><td style="padding:8px 0;color:#6b7280;width:120px;">通知原因</td><td style="padding:8px 0;font-weight:600;">${escapeHtml(reasonLabel[reason] ?? reason)}</td></tr>
                       <tr><td style="padding:8px 0;color:#6b7280;">上次状态</td><td style="padding:8px 0;">${escapeHtml(previousLabel)}</td></tr>
-                      <tr><td style="padding:8px 0;color:#6b7280;">检查时间</td><td style="padding:8px 0;">${escapeHtml(checkedAtLa)} America/Los_Angeles</td></tr>
+                      <tr><td style="padding:8px 0;color:#6b7280;">检查时间</td><td style="padding:8px 0;">${escapeHtml(checkedAtBeijing)} 北京时间</td></tr>
                     </table>
                     <div style="height:1px;background:#e5e7eb;margin:14px 0;"></div>
                     <div style="font-size:14px;color:#374151;line-height:1.6;">
