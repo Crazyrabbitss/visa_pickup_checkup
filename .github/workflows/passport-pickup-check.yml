@@ -74,7 +74,8 @@ jobs:
           const dailyStatus = laHour === '23';
           const error = state.status === 'error';
           const available = state.status === 'appointment-available';
-          const notify = isFirstSuccessfulRun || changed || dailyStatus || error;
+          const manualRun = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
+          const notify = manualRun || isFirstSuccessfulRun || changed || dailyStatus || error;
           const reason = error
             ? 'check-error'
             : available
@@ -85,6 +86,8 @@ jobs:
                   ? 'status-changed'
                   : dailyStatus
                     ? 'daily-status'
+                    : manualRun
+                      ? 'manual-run'
                     : 'no-notification';
           const statusLabel = {
             'appointment-available': '可能可以预约',
@@ -101,6 +104,7 @@ jobs:
             'daily-status': '每日状态汇总',
             'appointment-available': '可能可以预约',
             'check-error': '检查脚本报错',
+            'manual-run': '手动运行测试',
             'no-notification': '无需通知'
           };
           const checkedAtLa = new Intl.DateTimeFormat('zh-CN', {
