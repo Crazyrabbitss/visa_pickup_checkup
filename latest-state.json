@@ -1,12 +1,14 @@
 {
-  "checkedAt": "2026-07-08T11:42:12.773Z",
+  "checkedAt": "2026-07-08T11:55:07.111Z",
   "url": "https://schedule.gtspremium.com/",
-  "status": "error",
+  "status": "unavailable",
   "title": "HALO Passage - Appointment Booking",
   "finalUrl": "https://schedule.gtspremium.com/",
   "expectedMatches": [],
-  "unavailableMatches": [],
+  "unavailableMatches": [
+    "not eligible"
+  ],
   "availableMatches": [],
-  "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: /查询可用时段|check|available/i })\n",
+  "error": null,
   "screenshot": "artifacts/latest.png"
 }
