@@ -8,6 +8,7 @@
     "check:headed": "HEADLESS=false node src/check.js"
   },
   "dependencies": {
+    "nodemailer": "^9.0.3",
     "playwright": "^1.45.0"
   }
 }

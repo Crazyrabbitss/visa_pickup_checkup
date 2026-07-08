@@ -193,18 +193,14 @@ jobs:
 
       - name: Send email notification
         if: steps.result.outputs.notify == 'true'
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.GMAIL_USERNAME }}
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: ${{ steps.result.outputs.subject }}
-          to: ${{ secrets.EMAIL_TO }}
-          from: ${{ secrets.GMAIL_USERNAME }}
-          body: ${{ steps.result.outputs.body }}
-          html_body: ${{ steps.result.outputs.html_body }}
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_SUBJECT: ${{ steps.result.outputs.subject }}
+          EMAIL_BODY: ${{ steps.result.outputs.body }}
+          EMAIL_HTML_BODY: ${{ steps.result.outputs.html_body }}
+        run: node src/send-email.js
 
       - name: Save monitor state
         if: always()
