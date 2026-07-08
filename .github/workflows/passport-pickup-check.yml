@@ -35,9 +35,40 @@ jobs:
           PASSPORT_PICKUP_UID: ${{ secrets.PASSPORT_PICKUP_UID }}
         run: npm run check
 
-      - name: Notify when available or failed
+      - name: Read check result
         if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node src/notify-telegram.js
+        id: result
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const state = JSON.parse(fs.readFileSync('artifacts/latest-state.json', 'utf8'));
+          const notify = state.status === 'appointment-available' || state.status === 'error';
+          const lines = [
+            `status=${state.status}`,
+            `notify=${notify}`,
+            `subject=${state.status === 'appointment-available' ? 'Passport pickup appointment may be available' : 'Passport pickup tracker check failed'}`,
+            'body<<EOF',
+            `Status: ${state.status}`,
+            `Checked at: ${state.checkedAt}`,
+            `Unavailable matches: ${(state.unavailableMatches ?? []).join(', ') || 'none'}`,
+            `Available matches: ${(state.availableMatches ?? []).join(', ') || 'none'}`,
+            `Error: ${state.error ?? 'none'}`,
+            '',
+            'Booking site: https://schedule.gtspremium.com/',
+            'EOF'
+          ];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
+          NODE
+
+      - name: Send email notification
+        if: steps.result.outputs.notify == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: ${{ steps.result.outputs.subject }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_FROM }}
+          body: ${{ steps.result.outputs.body }}

@@ -34,8 +34,12 @@ This repo can run from a private GitHub repository with GitHub Actions. Keep the
 Create these repository secrets:
 
 - `PASSPORT_PICKUP_UID` - your 8 or 9 digit UID/HAL.
-- `TELEGRAM_BOT_TOKEN` - optional, only needed for Telegram notifications.
-- `TELEGRAM_CHAT_ID` - optional, only needed for Telegram notifications.
+- `SMTP_SERVER` - SMTP host, for example `smtp.qq.com`.
+- `SMTP_PORT` - SMTP port, for example `465`.
+- `SMTP_USERNAME` - SMTP login email address.
+- `SMTP_PASSWORD` - SMTP app password or authorization code.
+- `EMAIL_FROM` - sender email address.
+- `EMAIL_TO` - recipient email address.
 
 The workflow is stored at `.github/workflows/passport-pickup-check.yml`.
 
@@ -43,7 +47,7 @@ It supports:
 
 - Manual runs from the GitHub Actions tab.
 - Scheduled runs once per hour.
-- Telegram notification only when the status is `appointment-available` or `error`.
+- Email notification only when the status is `appointment-available` or `error`.
 
 The workflow does not upload screenshots or artifacts, because screenshots can include the UID.
 
