@@ -39,6 +39,25 @@ function findMatches(text, needles) {
   return needles.filter((needle) => lower.includes(String(needle).toLowerCase()));
 }
 
+async function clickCheckButton(page) {
+  const buttonName = new RegExp("\\u67e5\\u8be2\\u53ef\\u7528\\u65f6\\u6bb5|check|available", "i");
+  const namedButton = page.getByRole("button", { name: buttonName });
+
+  if (await namedButton.count()) {
+    await namedButton.first().click({ timeout: 5000 });
+    return;
+  }
+
+  const buttons = page.locator("button, input[type='submit'], input[type='button']");
+  const count = await buttons.count();
+
+  if (count === 0) {
+    throw new Error("No submit/check button found after entering UID.");
+  }
+
+  await buttons.nth(count - 1).click({ timeout: 5000 });
+}
+
 async function main() {
   const config = await readConfig();
   await fs.mkdir(artifactDir, { recursive: true });
@@ -79,7 +98,7 @@ async function main() {
       const termsCheckbox = page.locator("input[type='checkbox']").first();
       await termsCheckbox.check({ force: true });
 
-      await page.getByRole("button", { name: /查询可用时段|check|available/i }).click();
+      await clickCheckButton(page);
       await page.waitForLoadState("networkidle", { timeout: config.timeoutMs }).catch(() => {});
       await page.waitForTimeout(3000);
 

@@ -69,7 +69,7 @@ jobs:
             hour: '2-digit',
             hour12: false
           }).formatToParts(new Date()).find((part) => part.type === 'hour')?.value;
-          const isFirstSuccessfulRun = !previous && state.status !== 'error';
+          const isFirstSuccessfulRun = (!previous || previous.status === 'error') && state.status !== 'error';
           const changed = previous && fingerprint(previous) !== fingerprint(state);
           const dailyStatus = laHour === '23';
           const error = state.status === 'error';
