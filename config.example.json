@@ -1,0 +1,29 @@
+{
+  "url": "https://schedule.gtspremium.com/",
+  "headless": true,
+  "timeoutMs": 45000,
+  "uidOrHal": "",
+  "expectedText": [
+    "预约您的时间",
+    "输入您的UID或HAL",
+    "查询可用时段"
+  ],
+  "unavailableText": [
+    "您没有资格预约",
+    "没有资格",
+    "not eligible",
+    "not qualified",
+    "No appointment",
+    "not available",
+    "try again",
+    "无可用",
+    "没有可用",
+    "暂无可用"
+  ],
+  "availableText": [
+    "选择日期",
+    "选择时间",
+    "确认预约"
+  ],
+  "notes": "Copy this file to config.local.json. Prefer setting PASSPORT_PICKUP_UID in the environment instead of storing identifiers in the file."
+}
