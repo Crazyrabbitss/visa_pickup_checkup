@@ -191,8 +191,16 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
           NODE
 
+      - name: Print notification decision
+        if: always()
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "notify=${{ steps.result.outputs.notify }}"
+          echo "reason=${{ steps.result.outputs.reason }}"
+          echo "status=${{ steps.result.outputs.status }}"
+
       - name: Send email notification
-        if: steps.result.outputs.notify == 'true'
+        if: github.event_name == 'workflow_dispatch' || steps.result.outputs.notify == 'true'
         env:
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
