@@ -52,9 +52,12 @@ It supports:
 
 - Manual runs from the GitHub Actions tab.
 - Scheduled runs once per hour.
-- Email notification only when the status is `appointment-available` or `error`.
+- Email notification on the first successful run.
+- Email notification when the check result changes.
+- Email notification near the end of each day in `America/Los_Angeles`, even if nothing changed.
+- Email notification when the status is `appointment-available` or `error`.
 
-The workflow does not upload screenshots or artifacts, because screenshots can include the UID.
+The workflow does not upload screenshots or artifacts, because screenshots can include the UID. It stores the last non-secret check result on a `monitor-state` branch so future runs can compare status changes.
 
 ## Next Data Needed
 

@@ -9,6 +9,9 @@ concurrency:
   group: passport-pickup-check
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -35,6 +40,14 @@ jobs:
           PASSPORT_PICKUP_UID: ${{ secrets.PASSPORT_PICKUP_UID }}
         run: npm run check
 
+      - name: Load previous monitor state
+        if: always()
+        run: |
+          if git ls-remote --exit-code --heads origin monitor-state >/dev/null 2>&1; then
+            git fetch origin monitor-state:refs/remotes/origin/monitor-state
+            git show origin/monitor-state:latest-state.json > previous-state.json || true
+          fi
+
       - name: Read check result
         if: always()
         id: result
@@ -42,12 +55,54 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const state = JSON.parse(fs.readFileSync('artifacts/latest-state.json', 'utf8'));
-          const notify = state.status === 'appointment-available' || state.status === 'error';
+          const previous = fs.existsSync('previous-state.json')
+            ? JSON.parse(fs.readFileSync('previous-state.json', 'utf8'))
+            : null;
+          const fingerprint = (value) => JSON.stringify({
+            status: value?.status ?? null,
+            unavailableMatches: value?.unavailableMatches ?? [],
+            availableMatches: value?.availableMatches ?? [],
+            error: value?.error ?? null
+          });
+          const laHour = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Los_Angeles',
+            hour: '2-digit',
+            hour12: false
+          }).formatToParts(new Date()).find((part) => part.type === 'hour')?.value;
+          const isFirstSuccessfulRun = !previous && state.status !== 'error';
+          const changed = previous && fingerprint(previous) !== fingerprint(state);
+          const dailyStatus = laHour === '23';
+          const error = state.status === 'error';
+          const available = state.status === 'appointment-available';
+          const notify = isFirstSuccessfulRun || changed || dailyStatus || error;
+          const reason = error
+            ? 'check-error'
+            : available
+              ? 'appointment-available'
+              : isFirstSuccessfulRun
+                ? 'first-successful-run'
+                : changed
+                  ? 'status-changed'
+                  : dailyStatus
+                    ? 'daily-status'
+                    : 'no-notification';
+          const subjectStatus = state.status === 'appointment-available'
+            ? 'Passport pickup appointment may be available'
+            : state.status === 'error'
+              ? 'Passport pickup tracker check failed'
+              : reason === 'daily-status'
+                ? 'Passport pickup daily status'
+                : reason === 'first-successful-run'
+                  ? 'Passport pickup tracker started'
+                  : 'Passport pickup status changed';
           const lines = [
             `status=${state.status}`,
             `notify=${notify}`,
-            `subject=${state.status === 'appointment-available' ? 'Passport pickup appointment may be available' : 'Passport pickup tracker check failed'}`,
+            `reason=${reason}`,
+            `subject=${subjectStatus}`,
             'body<<EOF',
+            `Notification reason: ${reason}`,
+            `Previous status: ${previous?.status ?? 'none'}`,
             `Status: ${state.status}`,
             `Checked at: ${state.checkedAt}`,
             `Unavailable matches: ${(state.unavailableMatches ?? []).join(', ') || 'none'}`,
@@ -73,3 +128,24 @@ jobs:
           to: ${{ secrets.EMAIL_TO }}
           from: ${{ secrets.GMAIL_USERNAME }}
           body: ${{ steps.result.outputs.body }}
+
+      - name: Save monitor state
+        if: always()
+        run: |
+          if [ ! -f artifacts/latest-state.json ]; then
+            exit 0
+          fi
+          cp artifacts/latest-state.json "$RUNNER_TEMP/latest-state.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin monitor-state >/dev/null 2>&1; then
+            git fetch origin monitor-state:refs/remotes/origin/monitor-state
+            git switch --force-create monitor-state origin/monitor-state
+          else
+            git switch --orphan monitor-state
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp "$RUNNER_TEMP/latest-state.json" latest-state.json
+          git add latest-state.json
+          git commit -m "Update monitor state" || exit 0
+          git push origin monitor-state
