@@ -86,31 +86,103 @@ jobs:
                   : dailyStatus
                     ? 'daily-status'
                     : 'no-notification';
+          const statusLabel = {
+            'appointment-available': '可能可以预约',
+            unavailable: '目前不可预约',
+            'checked-no-known-result': '已查询，但未识别明确结果',
+            'needs-uid': '缺少 UID',
+            'loaded-without-known-text': '页面已打开，但未识别入口',
+            error: '检查失败',
+            unknown: '未知'
+          };
+          const reasonLabel = {
+            'first-successful-run': '第一次成功运行',
+            'status-changed': '状态发生变化',
+            'daily-status': '每日状态汇总',
+            'appointment-available': '可能可以预约',
+            'check-error': '检查脚本报错',
+            'no-notification': '无需通知'
+          };
+          const checkedAtLa = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'America/Los_Angeles',
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          }).format(new Date(state.checkedAt));
+          const currentLabel = statusLabel[state.status] ?? state.status;
+          const previousLabel = previous ? (statusLabel[previous.status] ?? previous.status) : '无';
           const subjectStatus = state.status === 'appointment-available'
-            ? 'Passport pickup appointment may be available'
+            ? '【护照自取】可能可以预约了'
             : state.status === 'error'
-              ? 'Passport pickup tracker check failed'
+              ? '【护照自取】检查失败'
               : reason === 'daily-status'
-                ? 'Passport pickup daily status'
+                ? `【护照自取】每日状态：${currentLabel}`
                 : reason === 'first-successful-run'
-                  ? 'Passport pickup tracker started'
-                  : 'Passport pickup status changed';
+                  ? `【护照自取】监控已启动：${currentLabel}`
+                  : `【护照自取】状态更新：${previousLabel} -> ${currentLabel}`;
+          const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+          const matchText = (items) => (items ?? []).length
+            ? items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')
+            : '<li>无</li>';
+          const plainBody = [
+            `护照自取预约监控`,
+            `当前结论：${currentLabel}`,
+            `通知原因：${reasonLabel[reason] ?? reason}`,
+            `上次状态：${previousLabel}`,
+            `检查时间：${checkedAtLa} America/Los_Angeles`,
+            `不可预约匹配：${(state.unavailableMatches ?? []).join(', ') || '无'}`,
+            `可预约匹配：${(state.availableMatches ?? []).join(', ') || '无'}`,
+            `错误：${state.error ?? '无'}`,
+            '',
+            '预约网站：https://schedule.gtspremium.com/'
+          ].join('\n');
+          const htmlBody = `<!doctype html>
+          <html>
+            <body style="margin:0;background:#f6f7f9;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+              <div style="max-width:640px;margin:0 auto;padding:28px 18px;">
+                <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+                  <div style="padding:20px 22px;border-bottom:1px solid #e5e7eb;">
+                    <div style="font-size:13px;color:#6b7280;margin-bottom:6px;">护照自取预约监控</div>
+                    <div style="font-size:24px;font-weight:700;color:${state.status === 'appointment-available' ? '#047857' : state.status === 'error' ? '#b91c1c' : '#111827'};">
+                      ${escapeHtml(currentLabel)}
+                    </div>
+                  </div>
+                  <div style="padding:18px 22px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                      <tr><td style="padding:8px 0;color:#6b7280;width:120px;">通知原因</td><td style="padding:8px 0;font-weight:600;">${escapeHtml(reasonLabel[reason] ?? reason)}</td></tr>
+                      <tr><td style="padding:8px 0;color:#6b7280;">上次状态</td><td style="padding:8px 0;">${escapeHtml(previousLabel)}</td></tr>
+                      <tr><td style="padding:8px 0;color:#6b7280;">检查时间</td><td style="padding:8px 0;">${escapeHtml(checkedAtLa)} America/Los_Angeles</td></tr>
+                    </table>
+                    <div style="height:1px;background:#e5e7eb;margin:14px 0;"></div>
+                    <div style="font-size:14px;color:#374151;line-height:1.6;">
+                      <div style="font-weight:700;margin-bottom:4px;">官网匹配到的不可预约文字</div>
+                      <ul style="margin-top:0;padding-left:20px;">${matchText(state.unavailableMatches)}</ul>
+                      <div style="font-weight:700;margin:14px 0 4px;">官网匹配到的可预约文字</div>
+                      <ul style="margin-top:0;padding-left:20px;">${matchText(state.availableMatches)}</ul>
+                      ${state.error ? `<div style="margin-top:14px;padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;"><strong>错误：</strong>${escapeHtml(state.error)}</div>` : ''}
+                    </div>
+                    <a href="https://schedule.gtspremium.com/" style="display:inline-block;margin-top:16px;padding:10px 14px;border-radius:8px;background:#111827;color:#ffffff;text-decoration:none;font-size:14px;">打开预约网站</a>
+                  </div>
+                </div>
+              </div>
+            </body>
+          </html>`;
           const lines = [
             `status=${state.status}`,
             `notify=${notify}`,
             `reason=${reason}`,
             `subject=${subjectStatus}`,
             'body<<EOF',
-            `Notification reason: ${reason}`,
-            `Previous status: ${previous?.status ?? 'none'}`,
-            `Status: ${state.status}`,
-            `Checked at: ${state.checkedAt}`,
-            `Unavailable matches: ${(state.unavailableMatches ?? []).join(', ') || 'none'}`,
-            `Available matches: ${(state.availableMatches ?? []).join(', ') || 'none'}`,
-            `Error: ${state.error ?? 'none'}`,
-            '',
-            'Booking site: https://schedule.gtspremium.com/',
+            plainBody,
             'EOF'
+            ,
+            'html_body<<HTMLEOF',
+            htmlBody,
+            'HTMLEOF'
           ];
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join('\n')}\n`);
           NODE
@@ -128,6 +200,7 @@ jobs:
           to: ${{ secrets.EMAIL_TO }}
           from: ${{ secrets.GMAIL_USERNAME }}
           body: ${{ steps.result.outputs.body }}
+          html_body: ${{ steps.result.outputs.html_body }}
 
       - name: Save monitor state
         if: always()
