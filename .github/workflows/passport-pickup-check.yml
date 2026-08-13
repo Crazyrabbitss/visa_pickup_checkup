@@ -2,9 +2,9 @@ name: Passport pickup check
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 * * * *"
-
+  #schedule:
+  #  - cron: "17 * * * *"
+  # the scheudled function has been commented out. for instruction go: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
 concurrency:
   group: passport-pickup-check
   cancel-in-progress: false
